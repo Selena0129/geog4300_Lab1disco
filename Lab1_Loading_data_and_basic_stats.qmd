@@ -11,11 +11,13 @@ library(tidyverse)
 library(knitr)
 
 knitr::opts_chunk$set(echo = TRUE)
+
+#Going to be using comments to keep track of what I'm doing! :)
 ```
 
 ## Loading data into R, data transformation, and summary statistics
 
-**Your name:**
+**Your name: Selena Centeno**
 
 **Overview and lab criteria:**
 
@@ -53,7 +55,7 @@ Load the tidyverse package and import the data:
 
 ```{r}
 #| message: false
-
+#Importing the data:
 library(tidyverse)
 
 daymet_data <- read_csv("data/daymet_monthly_median_2010-2021.csv")
@@ -73,8 +75,11 @@ There are a lot of observations here, 452,448 to be exact. To get a better grasp
 
 ```{r}
 #| label: task1
-
-# Your code goes here
+tmin_yearly <- daymet_data %>%
+  group_by(cty_name, state, region, year) %>%
+  summarise(tmin = mean(median_tmin, na.rm = TRUE))
+#na.rm tells R to ignore any "NA" values in the dataset. 
+kable(head(tmin_yearly))
 ```
 
 ## Task 2
@@ -83,8 +88,19 @@ There are a lot of observations here, 452,448 to be exact. To get a better grasp
 
 ```{r}
 #| label: task2
+#Filtering the dataframe to only include countries in the south region using the filter() function. Then, using the groupby function to organize based on states and year. Then, calculating the mean for each group from from the median_tmin column.
+southregion_tmin<- daymet_data %>%
+  filter(region == "South Region") %>%
+  group_by(state, year) %>%
+  summarise(tmin=mean(median_tmin, na.rm = TRUE))
 
-# Your code goes here
+#Extra Challenge Part below.
+southregion_tminchallenge <- daymet_data %>%
+  filter(region == "South Region") %>%
+  group_by(state, year) %>%
+  summarise(tmin = round(mean(median_tmin, na.rm = TRUE), 1))
+
+kable(head(southregion_tminchallenge))
 ```
 
 ## Task 3
@@ -93,8 +109,9 @@ There are a lot of observations here, 452,448 to be exact. To get a better grasp
 
 ```{r}
 #| label: task3
-
-# Your code goes here
+#Making pretty plot 
+ggplot(southregion_tmin, aes(x = year, y = tmin, color = state, group = state)) +
+  geom_line()
 ```
 
 ## Task 4
@@ -103,8 +120,17 @@ There are a lot of observations here, 452,448 to be exact. To get a better grasp
 
 ```{r}
 #| label: task4
+southregion_tmin_wide <- southregion_tmin %>%
+  pivot_wider(names_from = year, values_from = tmin)
 
-# Your code goes here
+kable(southregion_tmin_wide)
+#Looks nice. Rows are the states and columns are years. I'm going to make the mean tmin temps rounded like I did in Task 2!
+
+southregion_tminchallengewide <- southregion_tmin %>%
+  mutate(tmin = round(tmin, 1)) %>%
+  pivot_wider(names_from = year, values_from = tmin)
+
+kable(southregion_tminchallengewide)
 ```
 
 ## Task 5
@@ -113,15 +139,26 @@ There are a lot of observations here, 452,448 to be exact. To get a better grasp
 
 ```{r}
 #| label: task5
-
-# Your code goes here
+#First making the data frame for the mean max temp and mean precip, filtered to only 2015. Then grouping like we did earlier in the lab.
+mmtemp_mprcp_2015 <- daymet_data %>%
+  filter(year == "Y2015") %>%
+  group_by(state, region) %>%
+  summarise(mean_tmax = mean(median_tmax, na.rm = TRUE), mean_prcp = mean(sum_prcp, na.rm = TRUE))
+#For some reason the "mean_tmax" column is all "NA." I'm going to try the as.numeric function to see if it'll fix it.
+daymet_data <- daymet_data %>%
+  mutate(median_tmax = as.numeric(median_tmax))
+#YES IT DOES!
+#------------------------------------------------
+#Now make the pretty ggplot.
+ggplot(mmtemp_mprcp_2015, aes(x = mean_tmax, y = mean_prcp, color = region)) +
+  geom_point()
 ```
 
 ## Task 6
 
 *In the space below, explain what each function in your code for task 5 does to the dataset in plain English.*
 
-*Your response here.*
+The "filter()" function cleans the dataset down to only show observations from the year 2015 (or Y2015 in the dataframe). The "group_by()" function organizes the observations from 2015 (Y2015) by state and region so that the calculations in future functions can be done separately for each state. The "summarise()" function is condensing the 2015 observations for each state into a single row that contains the averages for median_tmax. Within the "summarise()" function is "mean(), which calculates the average tmax and average precipitation. The "na.rm = TRUE" tells R to ignore any missing values when its doing the calculations. When making the plot, "ggplot()" is the base function to which what graph is going to be made from the data (a scatterplot in this case). The "aes()" function assigns mean tmax to the x axis and mean precipitation to the y-axis. The "color" of each point is determined by the region. the "geom_point()" function tells R to display the states as points on the scatterplot.
 
 ## Task 7
 
@@ -139,9 +176,11 @@ state_2015 <- daymet_data %>%
       .names = "mean_{.col}"
     )
   )
+?across
 ```
 
-{Your response here}
+
+The "across()" functions makes it so you can apply the same function to multiple rows at the same time. Rather than writing out a calculation separately for each column. you can use across to select multiple to apply the same function. In the code block above, within the across() function, "c(median_tmax, sun_prcp) selects those two columns that the function is going to be applied to. The "mean" part is the calculation for each column selected. na.rm = TRUE tells R to ignore any missing values when performing the calculation. .names = "mean_{.col} tells R how to name the new calculated columns.
 
 
 ## Challenge Question
@@ -162,12 +201,7 @@ In addition to this code, write a short summary of a pattern that's evident in t
 
 ### Disclosure of Assistance
 
-Besides class materials, what other sources of assistance did you use while completing this lab? These can include input from classmates, relevant material identified through web searches (e.g., Stack Overflow), or assistance from ChatGPT or other AI tools. How did these sources support your own learning in completing this lab?
-
-*Response here.*
+I used AI assistance (ChatGPT) to tell me what exact R is doing when using certain functions when I couldn’t remember what the core meaning was for a function. Using the AI assistance supported my learning of this new coding language as I am now able to understand what R is doing behind the scenes when I input certain functions. It is a great search engine when needing a quick answer. 
 
 ### Lab Reflection
-
-How do you feel about the work you did on this lab? Was it easy, moderate, or hard? What are the biggest things you learned by completing it?
-
-*Your response here.*
+On a scale of 1-10, I'd say a 4, and the work on this lab was between easy and moderate. I had some trouble at the beginning of the lab with a few errors that I had to work around, but I eventually got them figured out. Had to slow down and really learn/soak in what certain functions are doing like the last lab. 
